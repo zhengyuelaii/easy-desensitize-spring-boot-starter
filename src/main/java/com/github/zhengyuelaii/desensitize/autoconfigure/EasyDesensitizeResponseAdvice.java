@@ -1,5 +1,8 @@
 package com.github.zhengyuelaii.desensitize.autoconfigure;
 
+import com.github.zhengyuelaii.desensitize.core.EasyDesensitize;
+import com.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
+import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +14,8 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
-import com.github.zhengyuelaii.desensitize.core.EasyDesensitize;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 响应结果脱敏
@@ -27,6 +31,8 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
 
     @Autowired
     private EasyDesensitizeInterceptor interceptor;
+    @Autowired(required = false)
+    private AbstractMaskingDataResolver<?> globalMaskingDataResolver;
 
     /**
      * 判断是否支持拦截 这里检查方法或类上是否带有 @ResponseMasking 注解
@@ -56,21 +62,46 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
             return null;
         }
 
+        if (globalMaskingDataResolver != null && globalMaskingDataResolver.supports(body)) {
+            body = globalMaskingDataResolver.resolve(body);
+        }
+
         if (interceptor != null) {
             try {
                 boolean shouldMask = interceptor.preHandle(body, returnType, request, response);
                 if (shouldMask) {
                     // 执行脱敏
-                    EasyDesensitize.mask(body);
+                    EasyDesensitize.mask(body, getMaskingHandlerMap(returnType));
                 }
                 interceptor.postHandle(body, returnType, request, response);
             } catch (Exception e) {
-                logger.error("脱敏处理过程中发生异常", e);
+                logger.error("An exception occurred during desensitization processing", e);
             }
         }
-
         return body;
     }
 
+    private Map<String, MaskingHandler> getMaskingHandlerMap(MethodParameter returnType) {
+        Map<String, MaskingHandler> maskingHandlerMap = null;
+
+        ResponseMasking responseMasking = returnType.getMethodAnnotation(ResponseMasking.class);
+        if (responseMasking == null) {
+            responseMasking = returnType.getContainingClass().getAnnotation(ResponseMasking.class);
+        }
+        if (responseMasking != null) {
+            MaskingField[] fields = responseMasking.fields();
+            if (fields != null && fields.length > 0) {
+                maskingHandlerMap = new HashMap<>();
+                for (MaskingField field : fields) {
+                    try {
+                        maskingHandlerMap.put(field.name(), field.typeHandler().newInstance());
+                    } catch (InstantiationException | IllegalAccessException e) {
+                        logger.error("Failed to instantiate masking handler for field: " + field.name(), e);
+                    }
+                }
+            }
+        }
+        return maskingHandlerMap;
+    }
 
 }
