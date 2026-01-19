@@ -22,12 +22,11 @@ import java.lang.annotation.Target;
 public @interface ResponseMasking {
 
     /**
-     * 脱敏解析器类，默认为 {@link MaskingDataResolver}
-     *
-     * @return 脱敏解析器类
+     * 是否使用全局脱敏解析器，默认为 true
+     * 
+     * @return 是否使用全局脱敏解析器
      */
-    Class<? extends MaskingDataResolver> resolver() default MaskingDataResolver.class;
-
+    boolean useGlobalResolver() default true;
 
     /**
      * 需要脱敏的字段配置，为空默认采用字段中配置的脱敏规则
@@ -35,5 +34,13 @@ public @interface ResponseMasking {
      * @return 脱敏字段配置数组
      */
     MaskingField[] fields() default {};
+
+
+    /**
+     * 不需要脱敏的字段名称数组，默认为空，表示所有字段都需要根据规则进行脱敏
+     * 
+     * @return 不需要脱敏的字段名称数组
+     */
+    String[] excludeFields() default {};
 
 }

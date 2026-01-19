@@ -3,6 +3,7 @@ package com.github.zhengyuelaii.desensitize.autoconfigure;
 import com.github.zhengyuelaii.desensitize.core.EasyDesensitize;
 import com.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
+import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,8 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
 
     @Autowired
     private EasyDesensitizeInterceptor interceptor;
-    @Autowired(required = false)
-    private AbstractMaskingDataResolver<?> globalMaskingDataResolver;
+    @Autowired
+    private MaskingResolverComposite globalMaskingDataResolver;
 
     /**
      * 判断是否支持拦截 这里检查方法或类上是否带有 @ResponseMasking 注解
@@ -62,16 +63,20 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
             return null;
         }
 
-        if (globalMaskingDataResolver != null && globalMaskingDataResolver.supports(body)) {
-            body = globalMaskingDataResolver.resolve(body);
-        }
-
         if (interceptor != null) {
             try {
                 boolean shouldMask = interceptor.preHandle(body, returnType, request, response);
                 if (shouldMask) {
+                    ResponseMasking responseMasking = getResponseMaskingAnnotation(returnType);
+                    Object data = body;
+                    if (responseMasking != null ) {
+                        if (responseMasking.useGlobalResolver()) {
+                            // 全局数据解析
+                            data = globalMaskingDataResolver.resolve(data);
+                        }
+                    }
                     // 执行脱敏
-                    EasyDesensitize.mask(body, getMaskingHandlerMap(returnType));
+                    EasyDesensitize.mask(data, getMaskingHandlerMap(responseMasking));
                 }
                 interceptor.postHandle(body, returnType, request, response);
             } catch (Exception e) {
@@ -81,23 +86,24 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
         return body;
     }
 
-    private Map<String, MaskingHandler> getMaskingHandlerMap(MethodParameter returnType) {
-        Map<String, MaskingHandler> maskingHandlerMap = null;
-
+    private ResponseMasking getResponseMaskingAnnotation(MethodParameter returnType) {
         ResponseMasking responseMasking = returnType.getMethodAnnotation(ResponseMasking.class);
         if (responseMasking == null) {
             responseMasking = returnType.getContainingClass().getAnnotation(ResponseMasking.class);
         }
+        return responseMasking;
+    }
+
+    private Map<String, MaskingHandler> getMaskingHandlerMap(ResponseMasking responseMasking) {
+        Map<String, MaskingHandler> maskingHandlerMap = null;
+
         if (responseMasking != null) {
             MaskingField[] fields = responseMasking.fields();
             if (fields != null && fields.length > 0) {
                 maskingHandlerMap = new HashMap<>();
                 for (MaskingField field : fields) {
-                    try {
-                        maskingHandlerMap.put(field.name(), field.typeHandler().newInstance());
-                    } catch (InstantiationException | IllegalAccessException e) {
-                        logger.error("Failed to instantiate masking handler for field: " + field.name(), e);
-                    }
+                    MaskingHandler handler = MaskingHandlerFactory.getHandler(field.typeHandler());
+                    maskingHandlerMap.put(field.name(), handler);
                 }
             }
         }

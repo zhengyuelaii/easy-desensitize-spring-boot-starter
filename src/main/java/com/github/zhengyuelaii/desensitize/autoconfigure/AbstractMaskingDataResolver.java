@@ -36,8 +36,14 @@ public abstract class AbstractMaskingDataResolver<T> implements MaskingDataResol
         Type type = getClass().getGenericSuperclass();
         if (type instanceof ParameterizedType) {
             Type actual = ((ParameterizedType) type).getActualTypeArguments()[0];
+            // 1. 如果是普通类 (如 String)
             if (actual instanceof Class) {
                 return (Class<?>) actual;
+            }
+
+            // 2. 如果是带泛型的类 (如 Result<?>)
+            if (actual instanceof ParameterizedType) {
+                return (Class<?>) ((ParameterizedType) actual).getRawType();
             }
         }
         throw new IllegalStateException("Cannot resolve generic Type T for " + getClass().getName());
