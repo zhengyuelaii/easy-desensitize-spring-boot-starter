@@ -33,7 +33,7 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
     @Autowired
     private EasyDesensitizeInterceptor interceptor;
     @Autowired
-    private MaskingResolverComposite globalMaskingDataResolver;
+    private GlobalMaskingResolverComposite globalMaskingDataResolver;
 
     /**
      * 判断是否支持拦截 这里检查方法或类上是否带有 @ResponseMasking 注解

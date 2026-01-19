@@ -1,7 +1,5 @@
 package com.github.zhengyuelaii.desensitize.autoconfigure;
 
-import com.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +10,7 @@ import java.util.List;
  * @version 1.0.0
  * @since 2026-01-19
  */
-public class MaskingResolverComposite {
+public class GlobalMaskingResolverComposite {
 
     private final List<AbstractMaskingDataResolver<?>> resolvers = new ArrayList<>();
 

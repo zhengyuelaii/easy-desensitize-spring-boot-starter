@@ -1,6 +1,5 @@
 package com.github.zhengyuelaii.desensitize.autoconfigure;
 
-import com.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -30,10 +29,10 @@ public class EasyDesensitizeAutoConfiguration {
 	}
 
     @Bean
-    MaskingResolverComposite maskingResolverComposite(
+    GlobalMaskingResolverComposite maskingResolverComposite(
             // Spring 会自动注入所有实现类，包括用户自定义的 @Component
             @Autowired(required = false) List<AbstractMaskingDataResolver<?>> resolvers) {
-        MaskingResolverComposite composite = new MaskingResolverComposite();
+        GlobalMaskingResolverComposite composite = new GlobalMaskingResolverComposite();
         if (resolvers != null) {
             composite.addResolvers(resolvers);
         }
