@@ -1,7 +1,6 @@
 package com.github.zhengyuelaii.desensitize.autoconfigure;
 
-import com.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
-import com.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
+import io.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

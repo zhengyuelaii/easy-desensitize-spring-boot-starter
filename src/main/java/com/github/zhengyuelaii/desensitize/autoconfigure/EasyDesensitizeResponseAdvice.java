@@ -1,9 +1,9 @@
 package com.github.zhengyuelaii.desensitize.autoconfigure;
 
-import com.github.zhengyuelaii.desensitize.core.EasyDesensitize;
-import com.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
-import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
-import com.github.zhengyuelaii.desensitize.core.handler.MaskingHandlerFactory;
+import io.github.zhengyuelaii.desensitize.core.EasyDesensitize;
+import io.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
+import io.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
+import io.github.zhengyuelaii.desensitize.core.handler.MaskingHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

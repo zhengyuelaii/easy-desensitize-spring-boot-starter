@@ -1,6 +1,6 @@
 package com.github.zhengyuelaii.desensitize.autoconfigure;
 
-import com.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
+import io.github.zhengyuelaii.desensitize.core.util.MaskingDataResolver;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
