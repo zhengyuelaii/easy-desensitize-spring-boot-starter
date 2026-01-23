@@ -15,8 +15,11 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 响应结果脱敏
@@ -40,8 +43,7 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
      */
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return returnType.hasMethodAnnotation(ResponseMasking.class)
-                || returnType.getContainingClass().isAnnotationPresent(ResponseMasking.class);
+        return returnType.hasMethodAnnotation(ResponseMasking.class) || returnType.getContainingClass().isAnnotationPresent(ResponseMasking.class);
     }
 
     /**
@@ -56,9 +58,7 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
      * @return 脱敏后的响应体对象，如果原响应体为空则返回null
      */
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
-                                  Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request,
-                                  ServerHttpResponse response) {
+    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
         if (body == null) {
             return null;
         }
@@ -66,17 +66,18 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
         if (interceptor != null) {
             try {
                 boolean shouldMask = interceptor.preHandle(body, returnType, request, response);
-                if (shouldMask) {
-                    ResponseMasking responseMasking = getResponseMaskingAnnotation(returnType);
+                ResponseMasking responseMasking = getResponseMaskingAnnotation(returnType);
+                if (shouldMask && responseMasking != null) {
                     Object data = body;
-                    if (responseMasking != null ) {
-                        if (responseMasking.useGlobalResolver()) {
-                            // 全局数据解析
-                            data = globalMaskingDataResolver.resolve(data);
-                        }
+                    if (responseMasking.useGlobalResolver()) {
+                        // 全局数据解析
+                        data = globalMaskingDataResolver.resolve(data);
                     }
+                    Set<String> excludedFields = responseMasking.excludeFields() == null
+                            ? null : Arrays.stream(responseMasking.excludeFields())
+                            .collect(Collectors.toSet());
                     // 执行脱敏
-                    EasyDesensitize.mask(data, getMaskingHandlerMap(responseMasking));
+                    EasyDesensitize.mask(data, getMaskingHandlerMap(responseMasking), excludedFields);
                 }
                 interceptor.postHandle(body, returnType, request, response);
             } catch (Exception e) {
