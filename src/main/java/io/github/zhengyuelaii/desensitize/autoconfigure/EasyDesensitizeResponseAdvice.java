@@ -15,10 +15,7 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -37,13 +34,23 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
     private EasyDesensitizeInterceptor interceptor;
     @Autowired
     private GlobalMaskingResolverComposite globalMaskingDataResolver;
+    @Autowired
+    private EasyDesensitizeProperties properties;
 
     /**
      * 判断是否支持拦截 这里检查方法或类上是否带有 @ResponseMasking 注解
      */
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return returnType.hasMethodAnnotation(ResponseMasking.class) || returnType.getContainingClass().isAnnotationPresent(ResponseMasking.class);
+        // 1. 忽略脱敏（最高优先级）
+        if (returnType.hasMethodAnnotation(IgnoreResponseMasking.class)
+                || returnType.getContainingClass().isAnnotationPresent(IgnoreResponseMasking.class)) {
+            return false;
+        }
+
+        // 2. 显式开启脱敏
+        return returnType.hasMethodAnnotation(ResponseMasking.class)
+                || returnType.getContainingClass().isAnnotationPresent(ResponseMasking.class);
     }
 
     /**
@@ -58,57 +65,100 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
      * @return 脱敏后的响应体对象，如果原响应体为空则返回null
      */
     @Override
-    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request, ServerHttpResponse response) {
+    public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
+                                  Class<? extends HttpMessageConverter<?>> selectedConverterType,
+                                  ServerHttpRequest request, ServerHttpResponse response) {
         if (body == null) {
             return null;
         }
 
-        if (interceptor != null) {
-            try {
-                boolean shouldMask = interceptor.preHandle(body, returnType, request, response);
-                ResponseMasking responseMasking = getResponseMaskingAnnotation(returnType);
-                if (shouldMask && responseMasking != null) {
-                    Object data = body;
-                    if (responseMasking.useGlobalResolver()) {
-                        // 全局数据解析
-                        data = globalMaskingDataResolver.resolve(data);
-                    }
-                    Set<String> excludedFields = responseMasking.excludeFields() == null
-                            ? null : Arrays.stream(responseMasking.excludeFields())
-                            .collect(Collectors.toSet());
-                    // 执行脱敏
-                    EasyDesensitize.mask(data, getMaskingHandlerMap(responseMasking), excludedFields);
+        try {
+            boolean shouldMask = interceptor.preHandle(body, returnType, request, response);
+            if (shouldMask) {
+                ResponseMaskingWrapper wrapper = new ResponseMaskingWrapper(returnType);
+                Object data = body;
+                if (properties.isUseGlobalResolver() && wrapper.isUseGlobalResolver()) {
+                    // 全局数据解析
+                    data = globalMaskingDataResolver.resolve(data);
                 }
-                interceptor.postHandle(body, returnType, request, response);
-            } catch (Exception e) {
-                logger.error("An exception occurred during desensitization processing", e);
+                // 执行脱敏
+                EasyDesensitize.mask(data, null, wrapper.getHandlers(),
+                        wrapper.getExcludedFields(), properties.isUseGlobalCache());
             }
+            interceptor.postHandle(body, returnType, request, response);
+        } catch (Exception e) {
+            interceptor.onException(e, body, returnType, request, response);
+            logger.error("An exception occurred during desensitization processing", e);
         }
         return body;
     }
 
-    private ResponseMasking getResponseMaskingAnnotation(MethodParameter returnType) {
-        ResponseMasking responseMasking = returnType.getMethodAnnotation(ResponseMasking.class);
-        if (responseMasking == null) {
-            responseMasking = returnType.getContainingClass().getAnnotation(ResponseMasking.class);
-        }
-        return responseMasking;
-    }
+    static class ResponseMaskingWrapper {
 
-    private Map<String, MaskingHandler> getMaskingHandlerMap(ResponseMasking responseMasking) {
-        Map<String, MaskingHandler> maskingHandlerMap = null;
+        private final boolean useGlobalResolver;
+        private final Map<String, MaskingHandler> handlers;
+        private final Set<String> excludedFields;
 
-        if (responseMasking != null) {
-            MaskingField[] fields = responseMasking.fields();
-            if (fields != null && fields.length > 0) {
-                maskingHandlerMap = new HashMap<>();
-                for (MaskingField field : fields) {
-                    MaskingHandler handler = MaskingHandlerFactory.getHandler(field.typeHandler());
-                    maskingHandlerMap.put(field.name(), handler);
+        public ResponseMaskingWrapper(MethodParameter returnType) {
+            ResponseMasking methodMasking =
+                    returnType.getMethodAnnotation(ResponseMasking.class);
+            ResponseMasking classMasking =
+                    returnType.getContainingClass().getAnnotation(ResponseMasking.class);
+
+            /* ---------- 1. useGlobalResolver：方法覆盖类 ---------- */
+            if (methodMasking != null) {
+                this.useGlobalResolver = methodMasking.useGlobalResolver();
+            } else if (classMasking != null) {
+                this.useGlobalResolver = classMasking.useGlobalResolver();
+            } else {
+                this.useGlobalResolver = true; // 全局默认值
+            }
+
+            /* ---------- 2. handlers（fields）：方法非空即覆盖 ---------- */
+            MaskingField[] effectiveFields = null;
+
+            if (methodMasking != null && methodMasking.fields().length > 0) {
+                effectiveFields = methodMasking.fields();
+            } else if (classMasking != null && classMasking.fields().length > 0) {
+                effectiveFields = classMasking.fields();
+            }
+
+            if (effectiveFields != null) {
+                this.handlers = new HashMap<>(effectiveFields.length);
+                for (MaskingField field : effectiveFields) {
+                    this.handlers.put(
+                            field.name(),
+                            MaskingHandlerFactory.getHandler(field.typeHandler())
+                    );
                 }
+            } else {
+                this.handlers = Collections.emptyMap();
+            }
+
+            /* ---------- 3. excludeFields：方法覆盖类 ---------- */
+            if (methodMasking != null && methodMasking.excludeFields().length > 0) {
+                this.excludedFields = new HashSet<>(
+                        Arrays.asList(methodMasking.excludeFields())
+                );
+            } else if (classMasking != null && classMasking.excludeFields().length > 0) {
+                this.excludedFields = new HashSet<>(
+                        Arrays.asList(classMasking.excludeFields())
+                );
+            } else {
+                this.excludedFields = Collections.emptySet();
             }
         }
-        return maskingHandlerMap;
-    }
 
+        public boolean isUseGlobalResolver() {
+            return useGlobalResolver;
+        }
+
+        public Map<String, MaskingHandler> getHandlers() {
+            return handlers;
+        }
+
+        public Set<String> getExcludedFields() {
+            return excludedFields;
+        }
+    }
 }

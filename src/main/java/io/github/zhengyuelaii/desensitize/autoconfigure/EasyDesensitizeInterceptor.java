@@ -43,4 +43,20 @@ public interface EasyDesensitizeInterceptor {
         // 默认不执行操作
     }
 
+    /**
+     * 异常回调（脱敏过程中发生异常）
+     *
+     * <p>
+     * 注意：异常已被框架捕获，默认行为是记录日志并返回原始响应。
+     * 实现方可在此进行监控、降级、打点等操作。
+     * </p>
+     */
+    default void onException(
+            Exception ex,
+            Object body,
+            MethodParameter returnType,
+            ServerHttpRequest request,
+            ServerHttpResponse response) {
+    }
+
 }

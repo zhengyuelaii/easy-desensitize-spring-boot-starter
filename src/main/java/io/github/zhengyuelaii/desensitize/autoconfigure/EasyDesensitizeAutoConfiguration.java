@@ -2,6 +2,8 @@ package io.github.zhengyuelaii.desensitize.autoconfigure;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,6 +17,8 @@ import java.util.List;
  * @since 2026-01-15
  */
 @Configuration
+@EnableConfigurationProperties(EasyDesensitizeProperties.class)
+@ConditionalOnProperty(prefix = "easy.desensitize", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class EasyDesensitizeAutoConfiguration {
 
     @Bean

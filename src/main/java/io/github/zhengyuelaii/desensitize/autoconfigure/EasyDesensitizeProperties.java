@@ -1,0 +1,63 @@
+package io.github.zhengyuelaii.desensitize.autoconfigure;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+/**
+ * EasyDesensitize 配置类
+ *
+ * @author zhengyuelaii
+ * @version 1.0.0
+ * @since 2026-01-26
+ */
+@ConfigurationProperties("easy.desensitize")
+public class EasyDesensitizeProperties {
+
+    /**
+     * 是否启用脱敏功能，默认为true
+     */
+    private boolean enabled = true;
+
+    /**
+     * 是否使用全局缓存，默认为true
+     */
+    private boolean useGlobalCache = true;
+
+    /**
+     * 是否使用全局解析器，默认为true
+     */
+    private boolean useGlobalResolver = true;
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isUseGlobalCache() {
+        return useGlobalCache;
+    }
+
+    public void setUseGlobalCache(boolean useGlobalCache) {
+        this.useGlobalCache = useGlobalCache;
+    }
+
+    public boolean isUseGlobalResolver() {
+        return useGlobalResolver;
+    }
+
+    public void setUseGlobalResolver(boolean useGlobalResolver) {
+        this.useGlobalResolver = useGlobalResolver;
+    }
+
+    @Override
+    public String toString() {
+        return "EasyDesensitizeProperties{" +
+                "enable=" + enabled +
+                ", useGlobalCache=" + useGlobalCache +
+                ", useGlobalResolver=" + useGlobalResolver +
+                '}';
+    }
+
+}
