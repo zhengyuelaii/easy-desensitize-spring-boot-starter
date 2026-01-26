@@ -155,7 +155,7 @@ public class PersonResController {
 }
 ```
 
-* 输出
+输出
 ```json
 [
     {
@@ -191,7 +191,8 @@ public class PersonResController {
 }
 ```
 
-* 输出
+输出
+
 ```json
 {
     "name": "张*凡",
@@ -199,6 +200,40 @@ public class PersonResController {
     "idNumber": "13**************95"
 }
 ```
+
+3. 全局配置
+
+为类添加@ResponseMasking 注解，即可对类中所有接口进行脱敏处理
+
+```java
+@RestController
+@RequestMapping("/map")
+@ResponseMasking(fields = {
+        @MaskingField(name = "name", typeHandler = NameMaskingHandler.class),
+        @MaskingField(name = "mobile", typeHandler = MobileMaskingHandler.class)
+})
+public class MapDataController {
+
+    @RequestMapping("/get")
+    public Map<String, Object> list() {
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "张小凡");
+        data.put("mobile", "13888888888");
+        return data;
+    }
+
+}
+```
+
+输出
+```json
+{
+  "name": "张小凡",
+  "mobile": "138****8888"
+}
+```
+
+> 注意：当类与方法同时添加@ResponseMasking 注解时，以方法注解为准
 
 ### 2. 脱敏拦截器
 
