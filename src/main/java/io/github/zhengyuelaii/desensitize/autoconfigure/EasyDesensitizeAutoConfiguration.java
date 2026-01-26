@@ -1,4 +1,4 @@
-package com.github.zhengyuelaii.desensitize.autoconfigure;
+package io.github.zhengyuelaii.desensitize.autoconfigure;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

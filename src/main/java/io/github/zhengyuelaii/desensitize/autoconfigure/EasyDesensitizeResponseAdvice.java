@@ -1,4 +1,4 @@
-package com.github.zhengyuelaii.desensitize.autoconfigure;
+package io.github.zhengyuelaii.desensitize.autoconfigure;
 
 import io.github.zhengyuelaii.desensitize.core.EasyDesensitize;
 import io.github.zhengyuelaii.desensitize.core.annotation.MaskingField;

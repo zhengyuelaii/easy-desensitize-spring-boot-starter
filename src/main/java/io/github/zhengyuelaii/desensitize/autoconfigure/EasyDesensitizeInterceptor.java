@@ -1,4 +1,4 @@
-package com.github.zhengyuelaii.desensitize.autoconfigure;
+package io.github.zhengyuelaii.desensitize.autoconfigure;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.http.server.ServerHttpRequest;
