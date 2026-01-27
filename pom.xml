@@ -2,14 +2,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.zhengyuelaii.desensitize</groupId>
+    <groupId>io.github.zhengyuelaii</groupId>
     <artifactId>easy-desensitize-spring-boot-starter</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>easy-desensitize-spring-boot-starter</name>
-    <description>Spring Boot Starter for Easy Desensitize. Out-of-the-box data
-        masking solution with Jackson support. Secure your sensitive data with
-        just one annotation!
+    <description>Spring Boot starter for annotation-driven response desensitization with high performance and flexible
+        extension. | 基于注解的 Spring Boot 响应数据脱敏 Starter，支持泛型、嵌套结构与灵活扩展。
     </description>
+    <url>https://github.com/zhengyuelaii/easy-desensitize-spring-boot-starter</url>
 
     <licenses>
         <license>
@@ -19,12 +19,43 @@
         </license>
     </licenses>
 
+    <scm>
+        <connection>scm:git:https://github.com/zhengyuelaii/easy-desensitize-spring-boot-starter.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:zhengyuelaii/easy-desensitize-spring-boot-starter.git</developerConnection>
+        <url>https://github.com/zhengyuelaii/easy-desensitize-spring-boot-starter</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>zhengyuelaii</id>
+            <name>Zheng Yuelai</name>
+            <email>zhengyuelaii@foxmail.com</email>
+            <url>https://github.com/zhengyuelaii</url>
+        </developer>
+    </developers>
+
     <properties>
         <java.version>1.8</java.version>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>2.7.18</spring-boot.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -36,21 +67,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
-            <version>${spring-boot.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
-            <version>${spring-boot.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <version>${spring-boot.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -90,7 +118,76 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- jacoco -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- javadoc jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- central publish -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.6.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!-- GPG 签名 -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
