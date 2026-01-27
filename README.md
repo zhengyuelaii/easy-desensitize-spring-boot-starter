@@ -2,7 +2,18 @@
 
 ## 介绍
 
-🍃`easy-desensitize-spring-boot-starter` 将帮助您基于[Spring Boot](https://github.com/spring-projects/spring-boot)使用[Easy Desensitize](https://github.com/zhengyuelaii/easy-desensitize-core)
+🍃 `easy-desensitize-spring-boot-starter` 是一个基于
+[Spring Boot](https://github.com/spring-projects/spring-boot)的 响应数据脱敏组件，
+用于在不侵入业务代码的前提下，对接口返回数据进行安全脱敏处理
+
+底层基于
+👉 [Easy Desensitize](https://github.com/zhengyuelaii/easy-desensitize-core)
+
+**典型适用场景：**
+* 用户信息、手机号、身份证等敏感字段返回
+* 后台管理系统 / B 端接口
+* 统一响应结构下的数据脱敏
+* 支持泛型、集合、嵌套对象
 
 ## 特性
 * 注解驱动：通过 @MaskingField 注解轻松定义脱敏规则
@@ -14,7 +25,7 @@
 
 ## 快速开始
 
-> 完整代码示例见：[easy-desensitize-samples](https://github.com/zhengyuelaii/easy-desensitize-samples)
+> 完整项目示例：[easy-desensitize-samples](https://github.com/zhengyuelaii/easy-desensitize-samples)
 
 ### 1. 添加依赖
 ```xml
@@ -43,9 +54,9 @@ public class User {
     // getter/setter
 }
 ```
-### 3. 在Controller中使用
+### 3. 在Controller启用脱敏
 
-在 Controller 方法或类上添加 @ResponseMasking 注解。
+在 **方法或类** 上添加 @ResponseMasking 注解。
 
 ```java
 @RestController
@@ -61,7 +72,7 @@ public class UserController {
 }
 ```
 
-输出
+响应结果
 
 ```json
 {
@@ -74,11 +85,9 @@ public class UserController {
 ## 高级用法
 
 ### 1. 自定义脱敏处理器
-> 推荐搭配`Hutool`的 [DesensitizedUtil](https://doc.hutool.cn/pages/DesensitizedUtil)使用
+> 推荐结合`Hutool`的 [DesensitizedUtil](https://doc.hutool.cn/pages/DesensitizedUtil)使用
 
-如果默认处理器无法满足需求，可自定义脱敏规则，自定义脱敏处理器需要实现`io.github.zhengyuelaii.desensitize.core.handler.MaskingHandler`接口
-
-1. 创建一个手机号脱敏处理器
+当内置处理器无法满足需求时，可自定义脱敏规则。
 
 ```java
 import cn.hutool.core.util.DesensitizedUtil;
@@ -95,7 +104,7 @@ public class MobileMaskingHandler implements MaskingHandler {
 }
 ```
 
-2. 创建实体类
+使用方式与内置处理器一致：
 
 ```java
 public class Person {
@@ -108,37 +117,6 @@ public class Person {
     // getter/setter
 }
 ```
-3. 在控制器中使用
-
-```java
-@RestController
-@RequestMapping("/person")
-public class PersonResController {
-    
-    @GetMapping("/list")
-    @ResponseMasking
-    public List<Person> list() {
-        Person person = new Person();
-        person.setName("张小凡");
-        person.setMobile("13700004586");
-        person.setIdNumber("130535202206145195");
-        return Collections.singletonList(person);
-    }
-
-}
-```
-
-* 输出
-
-```json
-[
-    {
-        "name": "张*凡",
-        "mobile": "137****4586",
-        "idNumber": "13**************95"
-    }
-]
-```
 
 ### 2. 动态指定脱敏规则
 
@@ -149,33 +127,9 @@ public class PersonResController {
 即使实体类标注了注解，也可以在特定接口排除脱敏。
 
 ```java
-@RestController
-@RequestMapping("/person")
-public class PersonResController {
-
-    @GetMapping("/list")
-    @ResponseMasking(excludeFields = { "name" })
-    public List<Person> list() {
-        Person person = new Person();
-        person.setName("张小凡");
-        person.setMobile("13700004586");
-        person.setIdNumber("130535202206145195");
-
-        return Collections.singletonList(person);
-    }
-
-}
-```
-
-输出
-```json
-[
-    {
-        "name": "张小凡",
-        "mobile": "137****4586",
-        "idNumber": "13**************95"
-    }
-]
+@ResponseMasking(excludeFields = {"name"})
+@GetMapping("/list")
+public List<Person> list() { ... }
 ```
 
 2. 动态指定字段
@@ -205,7 +159,7 @@ public class PersonResController {
 }
 ```
 
-输出
+响应结果
 
 ```json
 {
@@ -215,7 +169,7 @@ public class PersonResController {
 }
 ```
 
-3. 类级全局配置
+3. 类级统一脱敏
 
 为Controller添加`@ResponseMasking`注解，则该类下所有接口默认开启脱敏。
 
@@ -227,23 +181,7 @@ public class PersonResController {
         @MaskingField(name = "mobile", typeHandler = MobileMaskingHandler.class)
 })
 public class MapDataController {
-
-    @RequestMapping("/get")
-    public Map<String, Object> list() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "张小凡");
-        data.put("mobile", "13888888888");
-        return data;
-    }
-
-}
-```
-
-输出
-```json
-{
-  "name": "张小凡",
-  "mobile": "138****8888"
+    ...
 }
 ```
 
@@ -264,10 +202,7 @@ public class MapDataController {
     @GetMapping("/ignore")
     @IgnoreResponseMasking
     public Map<String,  Object> ignore() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", "张小凡");
-        data.put("mobile", "13888888888");
-        return data;
+        ...
     }
 
 }
@@ -275,18 +210,16 @@ public class MapDataController {
 
 ### 2. 脱敏拦截器
 
-当存在某些权限需返回不脱敏的数据时，可添加脱敏拦截器控制是否脱敏
+通过拦截器动态控制是否执行脱敏逻辑。
 
 ```java
 // 创建拦截器
 public class MyDesensitizeInterceptor implements EasyDesensitizeInterceptor {
-
     @Override
     public boolean preHandle(Object body, MethodParameter returnType, ServerHttpRequest request, ServerHttpResponse response) {
         String userId = request.getHeaders().getFirst("x-user-id");
         return !Objects.equals("1", userId); // 用户ID=1时跳过脱敏
     }
-
 }
 
 // 配置拦截器
@@ -301,9 +234,55 @@ public class MyConfig {
 
 ### 3. 全局解析器
 
+适用于统一响应结构（如 Result<T>、Page<T>），
+用于 快速定位真正需要脱敏的数据对象，减少反射路径。
+
+示例：Result
+
 ```java
-// TODO
+public class Result<T> {
+    private Integer code;
+    private String message;
+    private T data;
+    // getter/setter
+}
+
+// 继承AbstractMaskingDataResolver实现resolveInternal方法
+public class ResultMaskingDataResolver extends AbstractMaskingDataResolver<Result<?>> {
+
+    @Override
+    protected Object resolveInternal(Result<?> source) {
+        return source.getData();
+    }
+
+}
 ```
+配置解析器（支持同时配置多个解析器）
+
+```java
+
+@Configuration
+public class EasyDesensitizeConfig {
+    
+    @Bean
+    public ResultMaskingDataResolver resultMaskingDataResolver() {
+        return new ResultMaskingDataResolver();
+    }
+    
+    @Bean
+    public MaskingDataResolver<Page<?>> pageMaskingDataResolver() {
+        return new AbstractMaskingDataResolver<Page<?>>() {
+            @Override
+            protected Object resolveInternal(Page<?> source) {
+                return source.getRecords().iterator();
+            }
+        };
+    }
+    
+}
+```
+
+> 完整示例：[easy-desensitize-sample-common-result](https://github.com/zhengyuelaii/easy-desensitize-samples/tree/main/easy-desensitize-sample-common-result)
 
 ## 🤝 贡献指南
 
