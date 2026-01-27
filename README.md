@@ -81,6 +81,28 @@ public class UserController {
     "address": "上海"
 }
 ```
+## 配置项
+
+`easy-desensitize-spring-boot-starter` 提供了少量全局配置项，用于控制脱敏行为。
+**所有配置均为可选，默认即可满足大多数场景。**
+
+**配置项说明**
+
+| 配置项                                  | 类型      | 默认值  | 说明        |
+|--------------------------------------|---------|------|-----------|
+| easy-desensitize.enabled             | boolean | true | 是否启用脱敏功能  |
+| easy-desensitize.use-global-cache    | boolean | true | 是否启用全局缓存  |
+| easy.desensitize.use-global-resolver | boolean | true | 是否启用全局解析器 |
+
+**示例**
+
+```yaml
+easy:
+  desensitize:
+    enabled: true
+    use-global-cache: true
+    use-global-resolver: true
+```
 
 ## 高级用法
 
@@ -234,7 +256,7 @@ public class MyConfig {
 
 ### 3. 全局解析器
 
-适用于统一响应结构（如 Result<T>、Page<T>），
+适用于统一响应结构（如 Result\<T\>、Page\<T\>），
 用于 快速定位真正需要脱敏的数据对象，减少反射路径。
 
 示例：Result
