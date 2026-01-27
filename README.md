@@ -1,6 +1,8 @@
 # easy-desensitize-spring-boot-starter
 
-## 介绍
+![Build Status](https://github.com/zhengyuelaii/easy-desensitize-spring-boot-starter/actions/workflows/main.yml/badge.svg)
+![Maven Central](https://img.shields.io/maven-central/v/io.github.zhengyuelaii/easy-desensitize-spring-boot-starter.svg)
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 
 🍃 `easy-desensitize-spring-boot-starter` 是一个基于
 [Spring Boot](https://github.com/spring-projects/spring-boot)的 响应数据脱敏组件，
