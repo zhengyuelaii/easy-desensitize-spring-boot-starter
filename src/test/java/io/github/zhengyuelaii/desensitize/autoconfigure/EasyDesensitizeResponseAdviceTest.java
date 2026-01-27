@@ -53,62 +53,94 @@ public class EasyDesensitizeResponseAdviceTest {
     private ServerHttpResponse response;
 
     @Test
-    @DisplayName("应能处理数据为null")
+    @DisplayName("body 为 null 时应直接返回 null，且不触发任何处理")
     void should_handle_null_response_body() throws NoSuchMethodException {
         Method method = TestController.class.getMethod("getUser");
         MethodParameter returnType = new MethodParameter(method, -1);
-        Object result = advice.beforeBodyWrite(null, returnType, MediaType.APPLICATION_JSON,
-                null, request, response);
 
-        assertNull("当body为null时，应该返回null", result);
-        verify(interceptor, never()).preHandle(any(), any(), any(), any());
-        verify(interceptor, never()).postHandle(any(), any(), any(), any());
+        Object result = advice.beforeBodyWrite(
+                null,
+                returnType,
+                MediaType.APPLICATION_JSON,
+                null,
+                request,
+                response
+        );
+
+        assertNull("当 body 为 null 时，应该返回 null", result);
+        verifyNoInteractions(interceptor, resolverComposite, properties);
     }
 
-
     @Test
-    @DisplayName("应能为数据脱敏")
+    @DisplayName("应根据 @ResponseMasking 正确对响应体进行脱敏")
     void should_mask_response_body() throws NoSuchMethodException {
         // given
-        Map<String, Object> map = new HashMap<>();
-        map.put("name", "李小龙");
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", "李小龙");
 
         Method method = TestController.class.getMethod("getUser");
         MethodParameter returnType = new MethodParameter(method, -1);
 
-        // mock
+        // mock 行为
+        when(interceptor.preHandle(any(), any(), any(), any())).thenReturn(true);
         when(properties.isUseGlobalResolver()).thenReturn(false);
         when(properties.isUseGlobalCache()).thenReturn(true);
-        when(interceptor.preHandle(any(), any(), any(), any())).thenReturn(true);
 
         // when
-        Object result = advice.beforeBodyWrite(map, returnType, MediaType.APPLICATION_JSON,
-                null, request, response);
+        Object result = advice.beforeBodyWrite(
+                body,
+                returnType,
+                MediaType.APPLICATION_JSON,
+                null,
+                request,
+                response
+        );
 
         // then
         assertThat(result).isInstanceOf(Map.class);
         assertThat(((Map<?, ?>) result).get("name")).isEqualTo("李*龙");
+
         verify(interceptor).preHandle(any(), eq(returnType), any(), any());
         verify(interceptor).postHandle(any(), eq(returnType), any(), any());
+
+        verify(properties).isUseGlobalResolver();
+        verify(properties).isUseGlobalCache();
+
+        verify(resolverComposite, never()).resolve(any());
     }
 
     @Test
-    @DisplayName("测试不需要脱敏的情况")
-    void test_no_need_desensitize() throws NoSuchMethodException {
+    @DisplayName("当 interceptor 返回 false 时应跳过脱敏逻辑")
+    void should_skip_desensitize_when_interceptor_blocked() throws NoSuchMethodException {
+        // given
         Object originalBody = new Object();
+
         Method method = TestController.class.getMethod("getUser");
         MethodParameter returnType = new MethodParameter(method, -1);
-        // mock
-        when(interceptor.preHandle(any(), any(), any(), any())).thenReturn(false);
-        // when
-        Object result = advice.beforeBodyWrite(originalBody, returnType, MediaType.APPLICATION_JSON,
-                null, request, response);
 
+        when(interceptor.preHandle(any(), any(), any(), any())).thenReturn(false);
+
+        // when
+        Object result = advice.beforeBodyWrite(
+                originalBody,
+                returnType,
+                MediaType.APPLICATION_JSON,
+                null,
+                request,
+                response
+        );
+
+        // then
         assertThat(result).isSameAs(originalBody);
+
         verify(interceptor).preHandle(any(), eq(returnType), any(), any());
         verify(interceptor).postHandle(any(), eq(returnType), any(), any());
+        verifyNoInteractions(resolverComposite);
     }
 
+    /**
+     * 用于 MethodParameter 构造的测试 Controller
+     */
     static class TestController {
 
         @ResponseMasking(fields = {
@@ -117,7 +149,5 @@ public class EasyDesensitizeResponseAdviceTest {
         public Map<String, Object> getUser() {
             return null;
         }
-
     }
-
 }
