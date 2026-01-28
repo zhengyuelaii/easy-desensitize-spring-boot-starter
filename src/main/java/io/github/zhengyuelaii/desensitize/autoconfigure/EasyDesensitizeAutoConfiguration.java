@@ -1,5 +1,11 @@
 package io.github.zhengyuelaii.desensitize.autoconfigure;
 
+import io.github.zhengyuelaii.desensitize.advice.EasyDesensitizeResponseAdvice;
+import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
+import io.github.zhengyuelaii.desensitize.interceptor.DefaultDesensitizeInterceptor;
+import io.github.zhengyuelaii.desensitize.interceptor.EasyDesensitizeInterceptor;
+import io.github.zhengyuelaii.desensitize.resolver.AbstractMaskingDataResolver;
+import io.github.zhengyuelaii.desensitize.resolver.GlobalMaskingResolverComposite;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

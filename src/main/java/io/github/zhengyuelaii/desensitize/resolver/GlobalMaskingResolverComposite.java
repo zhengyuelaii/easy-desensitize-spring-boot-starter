@@ -1,4 +1,4 @@
-package io.github.zhengyuelaii.desensitize.autoconfigure;
+package io.github.zhengyuelaii.desensitize.resolver;
 
 import java.util.ArrayList;
 import java.util.List;

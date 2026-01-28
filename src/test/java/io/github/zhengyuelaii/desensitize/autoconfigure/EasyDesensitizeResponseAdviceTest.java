@@ -1,7 +1,12 @@
 package io.github.zhengyuelaii.desensitize.autoconfigure;
 
+import io.github.zhengyuelaii.desensitize.advice.EasyDesensitizeResponseAdvice;
+import io.github.zhengyuelaii.desensitize.annotation.ResponseMasking;
+import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
 import io.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 import io.github.zhengyuelaii.desensitize.core.handler.KeepFirstAndLastHandler;
+import io.github.zhengyuelaii.desensitize.interceptor.EasyDesensitizeInterceptor;
+import io.github.zhengyuelaii.desensitize.resolver.GlobalMaskingResolverComposite;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,10 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;

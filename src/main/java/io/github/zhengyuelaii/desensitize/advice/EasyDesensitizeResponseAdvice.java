@@ -1,5 +1,10 @@
-package io.github.zhengyuelaii.desensitize.autoconfigure;
+package io.github.zhengyuelaii.desensitize.advice;
 
+import io.github.zhengyuelaii.desensitize.annotation.IgnoreResponseMasking;
+import io.github.zhengyuelaii.desensitize.annotation.ResponseMasking;
+import io.github.zhengyuelaii.desensitize.interceptor.EasyDesensitizeInterceptor;
+import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
+import io.github.zhengyuelaii.desensitize.resolver.GlobalMaskingResolverComposite;
 import io.github.zhengyuelaii.desensitize.core.EasyDesensitize;
 import io.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 import io.github.zhengyuelaii.desensitize.core.handler.MaskingHandler;
@@ -16,7 +21,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 响应结果脱敏

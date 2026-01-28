@@ -1,5 +1,6 @@
 package io.github.zhengyuelaii.desensitize.autoconfigure;
 
+import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
