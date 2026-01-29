@@ -2,7 +2,7 @@ package io.github.zhengyuelaii.desensitize.autoconfigure;
 
 import io.github.zhengyuelaii.desensitize.advice.EasyDesensitizeResponseAdvice;
 import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
-import io.github.zhengyuelaii.desensitize.interceptor.DefaultDesensitizeInterceptor;
+import io.github.zhengyuelaii.desensitize.interceptor.DesensitizeInterceptorRegistry;
 import io.github.zhengyuelaii.desensitize.interceptor.EasyDesensitizeInterceptor;
 import io.github.zhengyuelaii.desensitize.resolver.AbstractMaskingDataResolver;
 import io.github.zhengyuelaii.desensitize.resolver.GlobalMaskingResolverComposite;
@@ -34,8 +34,8 @@ public class EasyDesensitizeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    EasyDesensitizeInterceptor easyDesensitizeInterceptor() {
-		return new DefaultDesensitizeInterceptor();
+    DesensitizeInterceptorRegistry desensitizeInterceptorRegistry() {
+		return new DesensitizeInterceptorRegistry();
 	}
 
     @Bean
