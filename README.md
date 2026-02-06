@@ -146,7 +146,7 @@ public class Person {
 
 通过 `@ResponseMasking` 注解可以动态指定脱敏规则，用于在特定接口中临时添加或排除某些字段的脱敏处理。
 
-1. 排除特定字段
+#### 2.1 排除特定字段
 
 即使实体类标注了注解，也可以在特定接口排除脱敏。
 
@@ -156,7 +156,7 @@ public class Person {
 public List<Person> list() { ... }
 ```
 
-2. 动态指定字段
+#### 2.2 动态指定字段
 
 适用于未标记注解或无法修改源码的类以及 Map<String, Object> 数据。
 
@@ -193,7 +193,7 @@ public class PersonResController {
 }
 ```
 
-3. 类级统一脱敏
+#### 2.3 类级统一脱敏
 
 为Controller添加`@ResponseMasking`注解，则该类下所有接口默认开启脱敏。
 
@@ -211,7 +211,7 @@ public class MapDataController {
 
 > ⚠️ 注意：当类与方法同时添加`@ResponseMasking`注解时，**方法级注解优先级更高。**
 
-4. 忽略脱敏
+#### 2.4 忽略脱敏
 
 如果Controller上开启了脱敏，个别接口可以使用 @IgnoreResponseMasking 强制关闭。
 
@@ -232,7 +232,7 @@ public class MapDataController {
 }
 ```
 
-### 2. 脱敏拦截器
+### 3. 脱敏拦截器
 
 Easy Desensitize 提供 **拦截器机制**，用于在单次请求生命周期内动态控制脱敏行为。
 
@@ -242,7 +242,7 @@ Easy Desensitize 提供 **拦截器机制**，用于在单次请求生命周期�
 * 对部分接口 **临时调整脱敏规则**
 * 在不修改实体类、不影响全局配置的前提下，实现 **请求级定制**
 
-#### 2.1 创建拦截器
+#### 3.1 创建拦截器
 
 ```java
 // 创建拦截器
@@ -262,7 +262,7 @@ public class MyDesensitizeInterceptor implements EasyDesensitizeInterceptor {
 }
 ```
 
-#### 2.2 注册拦截器
+#### 3.2 注册拦截器
 ```java
 // 注册拦截器并指定路径
 @Bean
@@ -281,7 +281,7 @@ public DesensitizeInterceptorRegistry desensitizeInterceptorRegistry() {
 
 > 拦截器仅对 **路径匹配的请求** 生效。使用方法类似于`Spring`拦截器
 
-#### 2.3 ResponseMaskingContext 能做什么？
+#### 3.3 ResponseMaskingContext 能做什么？
 
 ResponseMaskingContext 是 **请求级脱敏上下文**，仅在当前请求内有效。
 
@@ -309,7 +309,7 @@ context.removeExcludedField("name");
 所有修改都会在脱敏执行前 与注解定义的规则合并，
 不会影响全局配置，也不会影响其他请求。
 
-#### 拦截器执行顺序
+#### 3.4 拦截器执行顺序
 
 当满足以下条件时，拦截器才会生效：
 * Controller 方法或类上存在 @ResponseMasking
@@ -324,7 +324,7 @@ preHandle（按 order 顺序）
 postHandle（反向顺序）
 ```
 
-#### 2.5 postHandle 与 onException
+#### 3.5 postHandle 与 onException
 
 postHandle
 ```java
@@ -343,7 +343,7 @@ void onException(...)
 * 异常已被框架捕获
 * 默认行为：记录日志并返回原始响应
 
-### 3. 全局解析器
+### 4. 全局解析器
 
 适用于统一响应结构（如 Result\<T\>、Page\<T\>），
 用于 快速定位真正需要脱敏的数据对象，减少反射路径。
