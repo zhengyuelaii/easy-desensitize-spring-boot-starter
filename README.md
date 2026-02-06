@@ -247,7 +247,6 @@ Easy Desensitize 提供 **拦截器机制**，用于在单次请求生命周期�
 ```java
 // 创建拦截器
 public class MyDesensitizeInterceptor implements EasyDesensitizeInterceptor {
-
     @Override
     public boolean preHandle(
             Object body,
@@ -255,10 +254,8 @@ public class MyDesensitizeInterceptor implements EasyDesensitizeInterceptor {
             MethodParameter returnType,
             ServerHttpRequest request,
             ServerHttpResponse response) {
-
         // 示例：根据请求头决定是否脱敏
         String userId = request.getHeaders().getFirst("x-user-id");
-
         // userId = 1 时跳过脱敏
         return !"1".equals(userId);
     }
@@ -282,7 +279,7 @@ public DesensitizeInterceptorRegistry desensitizeInterceptorRegistry() {
 }
 ```
 
-> 拦截器仅对 **路径匹配的请求** 生效。使用方法参考`Spring`拦截器
+> 拦截器仅对 **路径匹配的请求** 生效。使用方法类似于`Spring`拦截器
 
 #### 2.3 ResponseMaskingContext 能做什么？
 
@@ -302,10 +299,10 @@ context.addHandler("mobile", new MobileMaskingHandler());
 // 移除字段脱敏
 context.removeHandler("idNumber");
 
-// 排除字段（不参与脱敏）
+// 添加排除字段（不参与脱敏）
 context.addExcludedField("debugInfo");
 
-// 恢复字段脱敏
+// 移除排除字段
 context.removeExcludedField("name");
 ```
 
@@ -315,9 +312,9 @@ context.removeExcludedField("name");
 #### 拦截器执行顺序
 
 当满足以下条件时，拦截器才会生效：
-•	Controller 方法或类上存在 @ResponseMasking
-•	未标注 @IgnoreResponseMasking
-•	请求路径命中拦截器配置的 Path Pattern
+* Controller 方法或类上存在 @ResponseMasking
+* 未标注 @IgnoreResponseMasking
+* 请求路径命中拦截器配置的 Path Pattern
 
 ```
 preHandle（按 order 顺序）
