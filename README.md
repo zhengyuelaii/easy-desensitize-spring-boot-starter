@@ -234,27 +234,117 @@ public class MapDataController {
 
 ### 2. 脱敏拦截器
 
-通过拦截器动态控制是否执行脱敏逻辑。
+Easy Desensitize 提供 **拦截器机制**，用于在单次请求生命周期内动态控制脱敏行为。
+
+拦截器适用于以下场景：
+
+* 根据请求路径、Header、用户身份等 **动态决定是否脱敏**
+* 对部分接口 **临时调整脱敏规则**
+* 在不修改实体类、不影响全局配置的前提下，实现 **请求级定制**
+
+#### 2.1 创建拦截器
 
 ```java
 // 创建拦截器
 public class MyDesensitizeInterceptor implements EasyDesensitizeInterceptor {
-    @Override
-    public boolean preHandle(Object body, MethodParameter returnType, ServerHttpRequest request, ServerHttpResponse response) {
-        String userId = request.getHeaders().getFirst("x-user-id");
-        return !Objects.equals("1", userId); // 用户ID=1时跳过脱敏
-    }
-}
 
-// 配置拦截器
-@Configuration
-public class MyConfig {
-    @Bean
-    public MyDesensitizeInterceptor myDesensitizeInterceptor() {
-        return new MyDesensitizeInterceptor();
+    @Override
+    public boolean preHandle(
+            Object body,
+            ResponseMaskingContext context,
+            MethodParameter returnType,
+            ServerHttpRequest request,
+            ServerHttpResponse response) {
+
+        // 示例：根据请求头决定是否脱敏
+        String userId = request.getHeaders().getFirst("x-user-id");
+
+        // userId = 1 时跳过脱敏
+        return !"1".equals(userId);
     }
 }
 ```
+
+#### 2.2 注册拦截器
+```java
+// 注册拦截器并指定路径
+@Bean
+public DesensitizeInterceptorRegistry desensitizeInterceptorRegistry() {
+    DesensitizeInterceptorRegistry registry = new DesensitizeInterceptorRegistry();
+
+    registry.addInterceptor(new MyDesensitizeInterceptor())
+            .addPathPatterns("/person/**");
+
+    registry.addInterceptor(new NameExcludeInterceptor())
+            .addPathPatterns("/user/**");
+
+    return registry;
+}
+```
+
+> 拦截器仅对 **路径匹配的请求** 生效。使用方法参考`Spring`拦截器
+
+#### 2.3 ResponseMaskingContext 能做什么？
+
+ResponseMaskingContext 是 **请求级脱敏上下文**，仅在当前请求内有效。
+
+你可以在 preHandle 中：
+* 动态新增 / 覆盖脱敏规则
+* 移除已有字段的脱敏
+* 控制字段是否参与脱敏
+
+常见用法示例：
+
+```java
+// 覆盖或新增字段脱敏规则
+context.addHandler("mobile", new MobileMaskingHandler());
+
+// 移除字段脱敏
+context.removeHandler("idNumber");
+
+// 排除字段（不参与脱敏）
+context.addExcludedField("debugInfo");
+
+// 恢复字段脱敏
+context.removeExcludedField("name");
+```
+
+所有修改都会在脱敏执行前 与注解定义的规则合并，
+不会影响全局配置，也不会影响其他请求。
+
+#### 拦截器执行顺序
+
+当满足以下条件时，拦截器才会生效：
+•	Controller 方法或类上存在 @ResponseMasking
+•	未标注 @IgnoreResponseMasking
+•	请求路径命中拦截器配置的 Path Pattern
+
+```
+preHandle（按 order 顺序）
+    ↓
+执行脱敏逻辑
+    ↓
+postHandle（反向顺序）
+```
+
+#### 2.5 postHandle 与 onException
+
+postHandle
+```java
+void postHandle(...)
+```
+* 脱敏完成后回调
+* 适用于日志、监控、统计
+* 不建议在此修改脱敏规则
+
+onException
+```java
+void onException(...)
+```
+
+* 脱敏过程中发生异常时触发
+* 异常已被框架捕获
+* 默认行为：记录日志并返回原始响应
 
 ### 3. 全局解析器
 
