@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.zhengyuelaii</groupId>
     <artifactId>easy-desensitize-spring-boot-starter</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
     <name>easy-desensitize-spring-boot-starter</name>
     <description>Spring Boot starter for annotation-driven response desensitization with high performance and flexible
         extension. | 基于注解的 Spring Boot 响应数据脱敏 Starter，支持泛型、嵌套结构与灵活扩展。
@@ -61,7 +61,7 @@
         <dependency>
             <groupId>io.github.zhengyuelaii</groupId>
             <artifactId>easy-desensitize-core</artifactId>
-            <version>0.1.1</version>
+            <version>0.1.2</version>
         </dependency>
 
         <dependency>
