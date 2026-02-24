@@ -90,11 +90,15 @@ public class UserController {
 
 **配置项说明**
 
-| 配置项                                  | 类型      | 默认值  | 说明        |
-|--------------------------------------|---------|------|-----------|
+| 配置项                                  | 类型     | 默认值  | 说明        |
+|--------------------------------------|--------|------|-----------|
 | easy-desensitize.enabled             | boolean | true | 是否启用脱敏功能  |
 | easy-desensitize.use-global-cache    | boolean | true | 是否启用全局缓存  |
 | easy.desensitize.use-global-resolver | boolean | true | 是否启用全局解析器 |
+| easy-desensitize.failure-strategy | enum | FAIL_OPEN | 脱敏过程中发生异常时的处理策略：FAIL_OPEN：返回原始数据（安全性相对低，但保证接口不中断）FAIL_CLOSE：抛出异常阻断请求（保证数据安全，但可能影响接口可用性）|
+
+
+
 
 **示例**
 
@@ -104,7 +108,10 @@ easy:
     enabled: true
     use-global-cache: true
     use-global-resolver: true
+    failure-strategy: FAIL_OPEN   # 或 FAIL_CLOSE
 ```
+
+> ⚠️ 建议生产环境使用 FAIL_CLOSE 以保证敏感数据不会被泄露，但在测试或非敏感接口场景下，可以使用 FAIL_OPEN 避免接口异常中断。
 
 ## 高级用法
 

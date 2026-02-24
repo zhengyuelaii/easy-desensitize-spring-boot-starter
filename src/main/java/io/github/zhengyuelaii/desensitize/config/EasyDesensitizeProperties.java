@@ -27,6 +27,11 @@ public class EasyDesensitizeProperties {
      */
     private boolean useGlobalResolver = true;
 
+    /**
+     * 失败策略，默认为FAIL_OPEN
+     */
+    private FailureStrategy failureStrategy = FailureStrategy.FAIL_OPEN;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -51,13 +56,21 @@ public class EasyDesensitizeProperties {
         this.useGlobalResolver = useGlobalResolver;
     }
 
+    public FailureStrategy getFailureStrategy() {
+        return failureStrategy;
+    }
+
+    public void setFailureStrategy(FailureStrategy failureStrategy) {
+        this.failureStrategy = failureStrategy;
+    }
+
     @Override
     public String toString() {
         return "EasyDesensitizeProperties{" +
-                "enable=" + enabled +
+                "enabled=" + enabled +
                 ", useGlobalCache=" + useGlobalCache +
                 ", useGlobalResolver=" + useGlobalResolver +
+                ", failureStrategy=" + failureStrategy +
                 '}';
     }
-
 }

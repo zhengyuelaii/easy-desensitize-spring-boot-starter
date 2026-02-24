@@ -3,6 +3,7 @@ package io.github.zhengyuelaii.desensitize.advice;
 import io.github.zhengyuelaii.desensitize.annotation.IgnoreResponseMasking;
 import io.github.zhengyuelaii.desensitize.annotation.ResponseMasking;
 import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
+import io.github.zhengyuelaii.desensitize.config.FailureStrategy;
 import io.github.zhengyuelaii.desensitize.core.EasyDesensitize;
 import io.github.zhengyuelaii.desensitize.interceptor.DesensitizeInterceptorChain;
 import io.github.zhengyuelaii.desensitize.interceptor.DesensitizeInterceptorRegistration;
@@ -78,17 +79,13 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
             return null;
         }
 
-        // 拦截器处理
-        String path = request.getURI().getPath();
-        List<EasyDesensitizeInterceptor> matchInterceptor = interceptorRegistry.getRegistrations().stream()
-                .filter(r -> r.match(path))
-                .sorted(Comparator.comparingInt(DesensitizeInterceptorRegistration::getOrder))
-                .map(DesensitizeInterceptorRegistration::getInterceptor)
-                .collect(Collectors.toList());
-
-        DesensitizeInterceptorChain chain = new DesensitizeInterceptorChain(matchInterceptor);
+        DesensitizeInterceptorChain chain = null;
 
         try {
+            // 拦截器处理
+            String path = request.getURI().getPath();
+            chain = buildInterceptorChain(path);
+
             ResponseMaskingContext context = new ResponseMaskingContext(new ResponseMaskingDefinition(returnType));
             boolean shouldMask = chain.preHandle(body, context, returnType, request, response);
             if (shouldMask) {
@@ -103,9 +100,37 @@ public class EasyDesensitizeResponseAdvice implements ResponseBodyAdvice<Object>
             }
             chain.postHandle(body, context, returnType, request, response);
         } catch (Exception e) {
-            chain.onException(e, body, returnType, request, response);
-            logger.error("An exception occurred during desensitization processing", e);
+            if (chain != null) {
+                chain.onException(e, body, returnType, request, response);
+            }
+            logger.error(
+                    "Desensitization failed. strategy={}, path={}",
+                    properties.getFailureStrategy(),
+                    request.getURI().getPath(),
+                    e
+            );
+            if (properties.getFailureStrategy() == FailureStrategy.FAIL_CLOSE) {
+                throw new IllegalStateException("An exception occurred during desensitization processing", e);
+            }
         }
         return body;
+    }
+
+    /**
+     * 构建脱敏拦截器链。
+     *
+     * @param path 请求路径，用于匹配注册的拦截器。
+     * @return 返回构建好的脱敏拦截器链，包含按顺序排序的匹配拦截器。
+     */
+    private DesensitizeInterceptorChain buildInterceptorChain(String path) {
+        // 筛选出与给定路径匹配的拦截器，并按照优先级排序后收集到列表中
+        List<EasyDesensitizeInterceptor> matchInterceptor = interceptorRegistry.getRegistrations().stream()
+                .filter(r -> r.match(path))
+                .sorted(Comparator.comparingInt(DesensitizeInterceptorRegistration::getOrder))
+                .map(DesensitizeInterceptorRegistration::getInterceptor)
+                .collect(Collectors.toList());
+
+        // 使用匹配的拦截器列表创建并返回拦截器链
+        return new DesensitizeInterceptorChain(matchInterceptor);
     }
 }

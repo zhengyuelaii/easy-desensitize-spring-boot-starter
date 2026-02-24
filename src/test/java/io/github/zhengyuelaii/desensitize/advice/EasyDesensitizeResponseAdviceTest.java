@@ -2,6 +2,7 @@ package io.github.zhengyuelaii.desensitize.advice;
 
 import io.github.zhengyuelaii.desensitize.annotation.ResponseMasking;
 import io.github.zhengyuelaii.desensitize.config.EasyDesensitizeProperties;
+import io.github.zhengyuelaii.desensitize.config.FailureStrategy;
 import io.github.zhengyuelaii.desensitize.core.annotation.MaskingField;
 import io.github.zhengyuelaii.desensitize.core.handler.KeepFirstAndLastHandler;
 import io.github.zhengyuelaii.desensitize.interceptor.DesensitizeInterceptorRegistration;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.util.AssertionErrors.assertNull;
@@ -151,6 +153,84 @@ public class EasyDesensitizeResponseAdviceTest {
         verify(interceptor).preHandle(any(), any(), eq(returnType), any(), any());
         verify(interceptor).postHandle(any(), any(), eq(returnType), any(), any());
         verifyNoInteractions(resolverComposite);
+    }
+
+    @Test
+    @DisplayName("当 FailureStrategy=FAIL_OPEN 异常时应返回原始数据")
+    void should_return_original_data_when_failure_strategy_is_fail_open() throws Exception {
+        // given
+        Object originalBody = new Object();
+
+        Method method = TestController.class.getMethod("getUser");
+        MethodParameter returnType = new MethodParameter(method, -1);
+
+        when(request.getURI()).thenReturn(new URI("http://localhost/test"));
+        when(interceptor.preHandle(any(), any(), any(), any(), any())).thenThrow(RuntimeException.class);
+        when(registration.getInterceptor()).thenReturn(interceptor);
+        when(registration.match(anyString())).thenReturn(true);
+        when(registry.getRegistrations()).thenReturn(Collections.singletonList(registration));
+        when(properties.getFailureStrategy()).thenReturn(FailureStrategy.FAIL_OPEN);
+
+        // when
+        Object result = advice.beforeBodyWrite(
+                originalBody,
+                returnType,
+                MediaType.APPLICATION_JSON,
+                null,
+                request,
+                response
+        );
+
+        // then
+        assertThat(result).isSameAs(originalBody);
+
+        // 验证 preHandle 被调用
+        verify(interceptor).preHandle(any(), any(), eq(returnType), any(), any());
+
+        // 验证 onException 被调用
+        verify(interceptor).onException(any(), any(), eq(returnType), any(), any());
+    }
+
+    @Test
+    @DisplayName("当 FailureStrategy=FAIL_CLOSE 异常时应抛出异常")
+    void should_throw_exception_when_failure_strategy_is_fail_close() throws Exception {
+        // given
+        Object originalBody = new Object();
+
+        Method method = TestController.class.getMethod("getUser");
+        MethodParameter returnType = new MethodParameter(method, -1);
+
+        when(request.getURI()).thenReturn(new URI("http://localhost/test"));
+        when(interceptor.preHandle(any(), any(), any(), any(), any())).thenThrow(RuntimeException.class);
+        when(registration.getInterceptor()).thenReturn(interceptor);
+        when(registration.match(anyString())).thenReturn(true);
+        when(registry.getRegistrations()).thenReturn(Collections.singletonList(registration));
+        when(properties.getFailureStrategy()).thenReturn(FailureStrategy.FAIL_CLOSE);
+
+        // when & then
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> advice.beforeBodyWrite(
+                        originalBody,
+                        returnType,
+                        MediaType.APPLICATION_JSON,
+                        null,
+                        request,
+                        response
+                )
+        );
+
+        // 可选：断言异常信息
+        assertThat(exception.getCause())
+                .isInstanceOf(RuntimeException.class);
+        assertThat(exception.getMessage())
+                .contains("An exception occurred during desensitization processing");
+
+        // 验证 preHandle 被调用
+        verify(interceptor).preHandle(any(), any(), eq(returnType), any(), any());
+
+        // 验证 onException 被调用
+        verify(interceptor).onException(any(), any(), eq(returnType), any(), any());
     }
 
     /**
